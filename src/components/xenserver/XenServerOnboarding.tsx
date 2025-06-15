@@ -17,9 +17,13 @@ interface XenServerHost {
   virtualSwitches?: string[];
 }
 
-export const XenServerOnboarding = () => {
+interface Props {
+  hosts: XenServerHost[];
+  setHosts: React.Dispatch<React.SetStateAction<XenServerHost[]>>;
+}
+
+export const XenServerOnboarding = ({ hosts, setHosts }: Props) => {
   const [isOpen, setIsOpen] = useState(false);
-  const [hosts, setHosts] = useState<XenServerHost[]>([]);
   const [formData, setFormData] = useState({
     name: '',
     managementIp: '',
@@ -39,6 +43,17 @@ export const XenServerOnboarding = () => {
       return;
     }
 
+    // Validate IP format
+    const ipRegex = /^(\d{1,3}\.){3}\d{1,3}$/;
+    if (!ipRegex.test(formData.managementIp)) {
+      toast({
+        title: "Invalid IP Address",
+        description: "Please provide a valid IPv4 address.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     setIsConnecting(true);
     const newHost: XenServerHost = {
       id: `xenserver-${Date.now()}`,
@@ -49,7 +64,7 @@ export const XenServerOnboarding = () => {
 
     setHosts(prev => [...prev, newHost]);
 
-    // Simulate connection process
+    // Simulate connection process with Open vSwitch detection
     setTimeout(() => {
       setHosts(prev => prev.map(host => 
         host.id === newHost.id 
@@ -57,14 +72,14 @@ export const XenServerOnboarding = () => {
               ...host, 
               status: 'connected',
               openVSwitchVersion: '2.17.0',
-              virtualSwitches: ['xenbr0', 'xapi1']
+              virtualSwitches: ['xenbr0', 'xapi1', 'xapi2']
             }
           : host
       ));
       
       toast({
         title: "XenServer Host Connected",
-        description: `Successfully connected to ${formData.name} and detected Open vSwitch.`
+        description: `Successfully connected to ${formData.name}. Open vSwitch detected and ready for overlay networks.`
       });
       
       setIsConnecting(false);
@@ -73,12 +88,24 @@ export const XenServerOnboarding = () => {
     }, 3000);
   };
 
+  const removeHost = (hostId: string) => {
+    const host = hosts.find(h => h.id === hostId);
+    setHosts(prev => prev.filter(h => h.id !== hostId));
+    
+    if (host) {
+      toast({
+        title: "Host Removed",
+        description: `${host.name} has been disconnected and removed.`
+      });
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-xl font-semibold">XenServer Host Management</h2>
-          <p className="text-gray-600">Connect and manage your XenServer hosts with Open vSwitch</p>
+          <p className="text-gray-600">Connect XenServer hosts to enable virtual network creation</p>
         </div>
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
           <DialogTrigger asChild>
@@ -89,7 +116,7 @@ export const XenServerOnboarding = () => {
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Add XenServer Host</DialogTitle>
+              <DialogTitle>Connect XenServer Host</DialogTitle>
             </DialogHeader>
             <div className="space-y-4">
               <div className="space-y-2">
@@ -180,7 +207,7 @@ export const XenServerOnboarding = () => {
                     <span>Open vSwitch: {host.openVSwitchVersion}</span>
                   </div>
                   <div>
-                    <p className="text-sm font-medium mb-2">Virtual Switches:</p>
+                    <p className="text-sm font-medium mb-2">Available Bridges:</p>
                     <div className="flex flex-wrap gap-2">
                       {host.virtualSwitches?.map((vswitch, index) => (
                         <span key={index} className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
@@ -189,12 +216,34 @@ export const XenServerOnboarding = () => {
                       ))}
                     </div>
                   </div>
+                  <div className="pt-2">
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="text-red-600 hover:text-red-700"
+                      onClick={() => removeHost(host.id)}
+                    >
+                      Remove Host
+                    </Button>
+                  </div>
                 </div>
               )}
             </CardContent>
           </Card>
         ))}
       </div>
+
+      {hosts.length === 0 && (
+        <Card className="border-dashed border-2 border-gray-300">
+          <CardContent className="flex flex-col items-center justify-center py-12">
+            <Server className="h-12 w-12 text-gray-400 mb-4" />
+            <p className="text-gray-500 text-lg font-medium">No XenServer Hosts Connected</p>
+            <p className="text-gray-400 text-sm text-center">
+              Connect your first XenServer host to begin creating virtual networks
+            </p>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 };
