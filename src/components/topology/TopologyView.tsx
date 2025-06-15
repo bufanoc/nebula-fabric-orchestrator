@@ -2,7 +2,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Network, Server, Wifi, Cable } from "lucide-react";
+import { GitBranch, Server, Wifi, Cable } from "lucide-react";
 
 export const TopologyView = () => {
   return (
@@ -21,7 +21,7 @@ export const TopologyView = () => {
       <Card className="h-96">
         <CardHeader>
           <CardTitle className="flex items-center">
-            <Network className="mr-2 h-5 w-5" />
+            <GitBranch className="mr-2 h-5 w-5" />
             Network Topology Visualization
           </CardTitle>
         </CardHeader>

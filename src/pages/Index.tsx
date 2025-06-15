@@ -15,6 +15,10 @@ const Index = () => {
   const [activeView, setActiveView] = useState<ActiveView>('dashboard');
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
+  const handleViewChange = (view: string) => {
+    setActiveView(view as ActiveView);
+  };
+
   const renderActiveView = () => {
     switch (activeView) {
       case 'dashboard':
@@ -38,7 +42,7 @@ const Index = () => {
     <div className="min-h-screen bg-gray-50 flex">
       <Sidebar 
         activeView={activeView} 
-        setActiveView={setActiveView}
+        setActiveView={handleViewChange}
         isCollapsed={isSidebarCollapsed}
         setIsCollapsed={setIsSidebarCollapsed}
       />

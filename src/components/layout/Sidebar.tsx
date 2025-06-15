@@ -4,7 +4,7 @@ import {
   Users, 
   Network, 
   Shield, 
-  Topology, 
+  GitBranch, 
   Activity,
   ChevronLeft,
   ChevronRight
@@ -23,7 +23,7 @@ const menuItems = [
   { id: 'tenants', label: 'Tenants', icon: Users },
   { id: 'switches', label: 'Virtual Switches', icon: Network },
   { id: 'policies', label: 'Policies', icon: Shield },
-  { id: 'topology', label: 'Network Topology', icon: Topology },
+  { id: 'topology', label: 'Network Topology', icon: GitBranch },
   { id: 'monitoring', label: 'Monitoring', icon: Activity },
 ];
 
