@@ -32,6 +32,14 @@ export const SwitchManagement = () => {
 
   const connectedHosts = hosts.filter(host => host.status === 'connected');
 
+  // Convert connected hosts to the format expected by VirtualNetworkManagement
+  const connectedHostsForNetworks = connectedHosts.map(host => ({
+    id: host.id,
+    name: host.name,
+    managementIp: host.managementIp,
+    status: 'connected' as const
+  }));
+
   return (
     <div className="space-y-6">
       <div>
@@ -59,7 +67,7 @@ export const SwitchManagement = () => {
 
         <TabsContent value="networks">
           <VirtualNetworkManagement 
-            hosts={connectedHosts}
+            hosts={connectedHostsForNetworks}
             networks={networks}
             setNetworks={setNetworks}
           />
@@ -68,7 +76,7 @@ export const SwitchManagement = () => {
         <TabsContent value="vms">
           <VMManagement 
             networks={networks.filter(n => n.status === 'active')}
-            hosts={connectedHosts}
+            hosts={connectedHostsForNetworks}
           />
         </TabsContent>
       </Tabs>

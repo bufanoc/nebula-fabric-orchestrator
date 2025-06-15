@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -21,15 +20,15 @@ interface VirtualNetwork {
   created: Date;
 }
 
-interface XenServerHost {
+interface ConnectedHost {
   id: string;
   name: string;
   managementIp: string;
-  status: 'connected' | 'disconnected';
+  status: 'connected';
 }
 
 interface Props {
-  hosts: XenServerHost[];
+  hosts: ConnectedHost[];
   networks: VirtualNetwork[];
   setNetworks: React.Dispatch<React.SetStateAction<VirtualNetwork[]>>;
 }
