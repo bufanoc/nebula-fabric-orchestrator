@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Monitor, Network, Wifi } from "lucide-react";
+import { Plus, Monitor, Network, Wifi, Play, Square, Pause, Trash2, Settings } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface VirtualNIC {
@@ -153,6 +153,83 @@ export const VMManagement = ({ networks, hosts }: Props) => {
           }
         : vm
     ));
+
+    const vm = vms.find(v => v.id === vmId);
+    const nic = vm?.nics.find(n => n.id === nicId);
+    if (vm && nic) {
+      toast({
+        title: `NIC ${nic.status === 'connected' ? 'Disconnected' : 'Connected'}`,
+        description: `${nic.name} on ${vm.name} is now ${nic.status === 'connected' ? 'disconnected' : 'connected'}`
+      });
+    }
+  };
+
+  const startVM = (vmId: string) => {
+    setVMs(prev => prev.map(vm => 
+      vm.id === vmId ? { ...vm, status: 'running' } : vm
+    ));
+    
+    const vm = vms.find(v => v.id === vmId);
+    toast({
+      title: "VM Started",
+      description: `${vm?.name} is now running`
+    });
+  };
+
+  const stopVM = (vmId: string) => {
+    setVMs(prev => prev.map(vm => 
+      vm.id === vmId ? { ...vm, status: 'stopped' } : vm
+    ));
+    
+    const vm = vms.find(v => v.id === vmId);
+    toast({
+      title: "VM Stopped",
+      description: `${vm?.name} has been stopped`
+    });
+  };
+
+  const pauseVM = (vmId: string) => {
+    setVMs(prev => prev.map(vm => 
+      vm.id === vmId ? { ...vm, status: 'paused' } : vm
+    ));
+    
+    const vm = vms.find(v => v.id === vmId);
+    toast({
+      title: "VM Paused",
+      description: `${vm?.name} has been paused`
+    });
+  };
+
+  const deleteVM = (vmId: string) => {
+    const vm = vms.find(v => v.id === vmId);
+    setVMs(prev => prev.filter(v => v.id !== vmId));
+    
+    if (vm) {
+      toast({
+        title: "VM Deleted",
+        description: `${vm.name} has been removed`
+      });
+    }
+  };
+
+  const removeNIC = (vmId: string, nicId: string) => {
+    setVMs(prev => prev.map(vm => 
+      vm.id === vmId 
+        ? { ...vm, nics: vm.nics.filter(nic => nic.id !== nicId) }
+        : vm
+    ));
+    
+    toast({
+      title: "NIC Removed",
+      description: "Virtual network interface has been removed"
+    });
+  };
+
+  const configureVM = (vm: VirtualMachine) => {
+    toast({
+      title: "VM Configuration",
+      description: `Opening configuration panel for ${vm.name}...`
+    });
   };
 
   const connectedHosts = hosts.filter(h => h.status === 'connected');
@@ -293,18 +370,65 @@ export const VMManagement = ({ networks, hosts }: Props) => {
                   <Monitor className="mr-2 h-5 w-5 text-blue-600" />
                   {vm.name}
                 </CardTitle>
-                <Badge 
-                  variant={vm.status === 'running' ? 'default' : 'secondary'}
-                  className={vm.status === 'running' ? 'bg-green-100 text-green-800' : ''}
-                >
-                  {vm.status}
-                </Badge>
+                <div className="flex items-center space-x-2">
+                  <Badge 
+                    variant={vm.status === 'running' ? 'default' : 'secondary'}
+                    className={
+                      vm.status === 'running' ? 'bg-green-100 text-green-800' : 
+                      vm.status === 'paused' ? 'bg-yellow-100 text-yellow-800' : ''
+                    }
+                  >
+                    {vm.status}
+                  </Badge>
+                </div>
               </div>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
                 <div className="text-sm">
                   <span className="font-medium">Host:</span> {vm.hostName}
+                </div>
+
+                {/* VM Power Controls */}
+                <div className="flex space-x-2">
+                  {vm.status === 'stopped' && (
+                    <Button size="sm" onClick={() => startVM(vm.id)} className="bg-green-600 hover:bg-green-700">
+                      <Play className="h-4 w-4 mr-1" />
+                      Start
+                    </Button>
+                  )}
+                  {vm.status === 'running' && (
+                    <>
+                      <Button size="sm" variant="outline" onClick={() => pauseVM(vm.id)}>
+                        <Pause className="h-4 w-4 mr-1" />
+                        Pause
+                      </Button>
+                      <Button size="sm" variant="outline" onClick={() => stopVM(vm.id)}>
+                        <Square className="h-4 w-4 mr-1" />
+                        Stop
+                      </Button>
+                    </>
+                  )}
+                  {vm.status === 'paused' && (
+                    <>
+                      <Button size="sm" onClick={() => startVM(vm.id)} className="bg-green-600 hover:bg-green-700">
+                        <Play className="h-4 w-4 mr-1" />
+                        Resume
+                      </Button>
+                      <Button size="sm" variant="outline" onClick={() => stopVM(vm.id)}>
+                        <Square className="h-4 w-4 mr-1" />
+                        Stop
+                      </Button>
+                    </>
+                  )}
+                  <Button size="sm" variant="outline" onClick={() => configureVM(vm)}>
+                    <Settings className="h-4 w-4 mr-1" />
+                    Configure
+                  </Button>
+                  <Button size="sm" variant="outline" className="text-red-600 hover:text-red-700" onClick={() => deleteVM(vm.id)}>
+                    <Trash2 className="h-4 w-4 mr-1" />
+                    Delete
+                  </Button>
                 </div>
 
                 <div>
@@ -332,13 +456,23 @@ export const VMManagement = ({ networks, hosts }: Props) => {
                               {nic.ipAddress && <div>IP: {nic.ipAddress}</div>}
                             </div>
                           </div>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => toggleNICConnection(vm.id, nic.id)}
-                          >
-                            {nic.status === 'connected' ? 'Disconnect' : 'Connect'}
-                          </Button>
+                          <div className="flex space-x-1">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => toggleNICConnection(vm.id, nic.id)}
+                            >
+                              {nic.status === 'connected' ? 'Disconnect' : 'Connect'}
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="text-red-600 hover:text-red-700"
+                              onClick={() => removeNIC(vm.id, nic.id)}
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </Button>
+                          </div>
                         </div>
                       ))}
                     </div>

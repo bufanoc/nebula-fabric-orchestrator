@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Server, Network, CheckCircle, AlertCircle } from "lucide-react";
+import { Plus, Server, Network, CheckCircle, AlertCircle, Settings, Eye } from "lucide-react";
 
 interface XenServerHost {
   id: string;
@@ -24,6 +24,8 @@ interface Props {
 
 export const XenServerOnboarding = ({ hosts, setHosts }: Props) => {
   const [isOpen, setIsOpen] = useState(false);
+  const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
+  const [selectedHost, setSelectedHost] = useState<XenServerHost | null>(null);
   const [formData, setFormData] = useState({
     name: '',
     managementIp: '',
@@ -98,6 +100,53 @@ export const XenServerOnboarding = ({ hosts, setHosts }: Props) => {
         description: `${host.name} has been disconnected and removed.`
       });
     }
+  };
+
+  const viewHostDetails = (host: XenServerHost) => {
+    setSelectedHost(host);
+    setDetailsDialogOpen(true);
+  };
+
+  const configureHost = (host: XenServerHost) => {
+    toast({
+      title: "Host Configuration",
+      description: `Opening configuration panel for ${host.name}...`
+    });
+    // This would open a configuration dialog in a real implementation
+  };
+
+  const retryConnection = (hostId: string) => {
+    const host = hosts.find(h => h.id === hostId);
+    if (!host) return;
+
+    setHosts(prev => prev.map(h => 
+      h.id === hostId 
+        ? { ...h, status: 'connecting' }
+        : h
+    ));
+
+    toast({
+      title: "Retrying Connection",
+      description: `Attempting to reconnect to ${host.name}...`
+    });
+
+    setTimeout(() => {
+      setHosts(prev => prev.map(h => 
+        h.id === hostId 
+          ? { 
+              ...h, 
+              status: 'connected',
+              openVSwitchVersion: '2.17.0',
+              virtualSwitches: ['xenbr0', 'xapi1', 'xapi2']
+            }
+          : h
+      ));
+      
+      toast({
+        title: "Connection Restored",
+        description: `Successfully reconnected to ${host.name}.`
+      });
+    }, 2000);
   };
 
   return (
@@ -216,7 +265,48 @@ export const XenServerOnboarding = ({ hosts, setHosts }: Props) => {
                       ))}
                     </div>
                   </div>
-                  <div className="pt-2">
+                  <div className="flex space-x-2 pt-3">
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={() => viewHostDetails(host)}
+                    >
+                      <Eye className="h-4 w-4 mr-1" />
+                      Details
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={() => configureHost(host)}
+                    >
+                      <Settings className="h-4 w-4 mr-1" />
+                      Configure
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="text-red-600 hover:text-red-700"
+                      onClick={() => removeHost(host.id)}
+                    >
+                      Remove
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {host.status === 'error' && (
+                <div className="space-y-3">
+                  <div className="text-sm text-red-600 bg-red-50 p-2 rounded">
+                    ✗ Connection failed - unable to reach host
+                  </div>
+                  <div className="flex space-x-2 pt-3">
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={() => retryConnection(host.id)}
+                    >
+                      Retry Connection
+                    </Button>
                     <Button 
                       variant="outline" 
                       size="sm" 
@@ -244,6 +334,47 @@ export const XenServerOnboarding = ({ hosts, setHosts }: Props) => {
           </CardContent>
         </Card>
       )}
+
+      {/* Host Details Dialog */}
+      <Dialog open={detailsDialogOpen} onOpenChange={setDetailsDialogOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Host Details</DialogTitle>
+          </DialogHeader>
+          {selectedHost && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-sm font-medium">Host Name</Label>
+                  <p className="text-sm text-gray-600">{selectedHost.name}</p>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium">Management IP</Label>
+                  <p className="text-sm text-gray-600">{selectedHost.managementIp}</p>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium">Status</Label>
+                  <p className="text-sm text-gray-600 capitalize">{selectedHost.status}</p>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium">Open vSwitch Version</Label>
+                  <p className="text-sm text-gray-600">{selectedHost.openVSwitchVersion || 'N/A'}</p>
+                </div>
+              </div>
+              <div>
+                <Label className="text-sm font-medium">Virtual Switches</Label>
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {selectedHost.virtualSwitches?.map((vswitch, index) => (
+                    <span key={index} className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
+                      {vswitch}
+                    </span>
+                  )) || <p className="text-sm text-gray-500">None available</p>}
+                </div>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

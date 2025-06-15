@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Plus, Users, Network, Shield } from "lucide-react";
+import { Plus, Users, Network, Shield, Eye, Settings, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 interface Tenant {
@@ -56,6 +56,9 @@ export const TenantManagement = () => {
   });
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
+  const [configDialogOpen, setConfigDialogOpen] = useState(false);
+  const [selectedTenant, setSelectedTenant] = useState<Tenant | null>(null);
 
   const handleCreateTenant = () => {
     if (!newTenant.name.trim()) {
@@ -77,6 +80,42 @@ export const TenantManagement = () => {
     setNewTenant({ name: "", description: "" });
     setIsDialogOpen(false);
     toast.success(`Tenant "${tenant.name}" created successfully`);
+  };
+
+  const viewDetails = (tenant: Tenant) => {
+    setSelectedTenant(tenant);
+    setDetailsDialogOpen(true);
+  };
+
+  const configureTenant = (tenant: Tenant) => {
+    setSelectedTenant(tenant);
+    setConfigDialogOpen(true);
+  };
+
+  const deleteTenant = (tenantId: string) => {
+    const tenant = tenants.find(t => t.id === tenantId);
+    if (tenant) {
+      setTenants(prev => prev.filter(t => t.id !== tenantId));
+      toast.success(`Tenant "${tenant.name}" deleted successfully`);
+    }
+  };
+
+  const toggleTenantStatus = (tenantId: string) => {
+    setTenants(prev => prev.map(tenant => 
+      tenant.id === tenantId 
+        ? { ...tenant, status: tenant.status === 'active' ? 'inactive' : 'active' }
+        : tenant
+    ));
+    
+    const tenant = tenants.find(t => t.id === tenantId);
+    toast.success(`Tenant "${tenant?.name}" ${tenant?.status === 'active' ? 'deactivated' : 'activated'}`);
+  };
+
+  const updateTenantConfig = () => {
+    if (selectedTenant) {
+      toast.success(`Configuration updated for ${selectedTenant.name}`);
+      setConfigDialogOpen(false);
+    }
   };
 
   return (
@@ -141,7 +180,7 @@ export const TenantManagement = () => {
                 </CardTitle>
                 <Badge 
                   variant={tenant.status === 'active' ? 'default' : 'secondary'}
-                  className={tenant.status === 'active' ? 'bg-green-100 text-green-800' : ''}
+                  className={tenant.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}
                 >
                   {tenant.status}
                 </Badge>
@@ -171,12 +210,39 @@ export const TenantManagement = () => {
                   <p className="text-xs text-gray-500">Created: {tenant.created}</p>
                 </div>
                 
-                <div className="flex space-x-2 pt-2">
-                  <Button variant="outline" size="sm" className="flex-1">
+                <div className="grid grid-cols-2 gap-2 pt-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => viewDetails(tenant)}
+                  >
+                    <Eye className="mr-1 h-4 w-4" />
+                    Details
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => configureTenant(tenant)}
+                  >
+                    <Settings className="mr-1 h-4 w-4" />
                     Configure
                   </Button>
-                  <Button variant="outline" size="sm" className="flex-1">
-                    View Details
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => toggleTenantStatus(tenant.id)}
+                    className={tenant.status === 'active' ? 'text-orange-600 hover:text-orange-700' : 'text-green-600 hover:text-green-700'}
+                  >
+                    {tenant.status === 'active' ? 'Deactivate' : 'Activate'}
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => deleteTenant(tenant.id)}
+                    className="text-red-600 hover:text-red-700"
+                  >
+                    <Trash2 className="mr-1 h-4 w-4" />
+                    Delete
                   </Button>
                 </div>
               </div>
@@ -184,6 +250,106 @@ export const TenantManagement = () => {
           </Card>
         ))}
       </div>
+
+      {/* Tenant Details Dialog */}
+      <Dialog open={detailsDialogOpen} onOpenChange={setDetailsDialogOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Tenant Details</DialogTitle>
+          </DialogHeader>
+          {selectedTenant && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-sm font-medium">Tenant Name</Label>
+                  <p className="text-sm text-gray-600">{selectedTenant.name}</p>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium">Status</Label>
+                  <p className="text-sm text-gray-600 capitalize">{selectedTenant.status}</p>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium">Virtual Switches</Label>
+                  <p className="text-sm text-gray-600">{selectedTenant.switches}</p>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium">Active Policies</Label>
+                  <p className="text-sm text-gray-600">{selectedTenant.policies}</p>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium">Created Date</Label>
+                  <p className="text-sm text-gray-600">{selectedTenant.created}</p>
+                </div>
+              </div>
+              <div>
+                <Label className="text-sm font-medium">Description</Label>
+                <p className="text-sm text-gray-600">{selectedTenant.description}</p>
+              </div>
+              <div className="bg-blue-50 p-3 rounded">
+                <p className="text-sm text-blue-800">
+                  <strong>Network Isolation:</strong> This tenant has dedicated virtual switches and 
+                  isolated network policies ensuring secure multi-tenancy.
+                </p>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Tenant Configuration Dialog */}
+      <Dialog open={configDialogOpen} onOpenChange={setConfigDialogOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Configure Tenant - {selectedTenant?.name}</DialogTitle>
+          </DialogHeader>
+          {selectedTenant && (
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="tenantName">Tenant Name</Label>
+                <Input
+                  id="tenantName"
+                  defaultValue={selectedTenant.name}
+                  placeholder="Tenant name"
+                />
+              </div>
+              <div>
+                <Label htmlFor="tenantDesc">Description</Label>
+                <Input
+                  id="tenantDesc"
+                  defaultValue={selectedTenant.description}
+                  placeholder="Tenant description"
+                />
+              </div>
+              <div>
+                <Label htmlFor="maxSwitches">Maximum Virtual Switches</Label>
+                <Input
+                  id="maxSwitches"
+                  type="number"
+                  defaultValue="10"
+                  placeholder="Maximum switches allowed"
+                />
+              </div>
+              <div>
+                <Label htmlFor="maxPolicies">Maximum Policies</Label>
+                <Input
+                  id="maxPolicies"
+                  type="number"
+                  defaultValue="50"
+                  placeholder="Maximum policies allowed"
+                />
+              </div>
+              <div className="flex justify-end space-x-2 pt-4">
+                <Button variant="outline" onClick={() => setConfigDialogOpen(false)}>
+                  Cancel
+                </Button>
+                <Button onClick={updateTenantConfig}>
+                  Save Configuration
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -5,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Plus, Network, Wifi } from "lucide-react";
+import { Plus, Network, Wifi, Eye, Settings, Trash2, Users } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface VirtualNetwork {
@@ -35,6 +36,8 @@ interface Props {
 
 export const VirtualNetworkManagement = ({ hosts, networks, setNetworks }: Props) => {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [topologyDialogOpen, setTopologyDialogOpen] = useState(false);
+  const [selectedNetwork, setSelectedNetwork] = useState<VirtualNetwork | null>(null);
   const [newNetwork, setNewNetwork] = useState({
     name: '',
     subnet: '192.168.1.0/24',
@@ -137,6 +140,27 @@ export const VirtualNetworkManagement = ({ hosts, networks, setNetworks }: Props
         description: `Virtual network ${network.name} and its VXLAN tunnel have been removed.`
       });
     }
+  };
+
+  const viewTopology = (network: VirtualNetwork) => {
+    setSelectedNetwork(network);
+    setTopologyDialogOpen(true);
+  };
+
+  const configureNetwork = (network: VirtualNetwork) => {
+    toast({
+      title: "Network Configuration",
+      description: `Opening configuration panel for ${network.name}...`
+    });
+    // This would open a configuration dialog in a real implementation
+  };
+
+  const manageUsers = (network: VirtualNetwork) => {
+    toast({
+      title: "User Management",
+      description: `Opening user access management for ${network.name}...`
+    });
+    // This would open a user management dialog in a real implementation
   };
 
   return (
@@ -296,16 +320,38 @@ export const VirtualNetworkManagement = ({ hosts, networks, setNetworks }: Props
                   </div>
                 )}
 
-                <div className="flex space-x-2 pt-3">
-                  <Button variant="outline" size="sm" className="flex-1">
-                    View Topology
+                <div className="grid grid-cols-2 gap-2 pt-3">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => viewTopology(network)}
+                  >
+                    <Eye className="mr-1 h-4 w-4" />
+                    Topology
                   </Button>
                   <Button 
                     variant="outline" 
                     size="sm" 
-                    className="flex-1 text-red-600 hover:text-red-700"
+                    onClick={() => configureNetwork(network)}
+                  >
+                    <Settings className="mr-1 h-4 w-4" />
+                    Configure
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => manageUsers(network)}
+                  >
+                    <Users className="mr-1 h-4 w-4" />
+                    Users
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="text-red-600 hover:text-red-700"
                     onClick={() => deleteNetwork(network.id)}
                   >
+                    <Trash2 className="mr-1 h-4 w-4" />
                     Delete
                   </Button>
                 </div>
@@ -326,6 +372,58 @@ export const VirtualNetworkManagement = ({ hosts, networks, setNetworks }: Props
           </CardContent>
         </Card>
       )}
+
+      {/* Network Topology Dialog */}
+      <Dialog open={topologyDialogOpen} onOpenChange={setTopologyDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Network Topology - {selectedNetwork?.name}</DialogTitle>
+          </DialogHeader>
+          {selectedNetwork && (
+            <div className="space-y-4">
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <h4 className="font-medium mb-3">VXLAN Mesh Topology</h4>
+                <div className="space-y-3">
+                  <div className="text-sm">
+                    <span className="font-medium">VXLAN ID:</span> {selectedNetwork.vxlanId}
+                  </div>
+                  <div className="text-sm">
+                    <span className="font-medium">Subnet:</span> {selectedNetwork.subnet}
+                  </div>
+                  <div className="text-sm">
+                    <span className="font-medium">Status:</span> {selectedNetwork.status}
+                  </div>
+                </div>
+              </div>
+              
+              <div>
+                <h4 className="font-medium mb-3">Connected Hosts ({selectedNetwork.connectedHosts.length})</h4>
+                <div className="grid grid-cols-1 gap-2">
+                  {selectedNetwork.connectedHosts.map((hostId) => {
+                    const host = hosts.find(h => h.id === hostId);
+                    return host ? (
+                      <div key={hostId} className="flex items-center justify-between p-2 bg-blue-50 rounded">
+                        <div className="flex items-center">
+                          <Network className="h-4 w-4 mr-2 text-blue-600" />
+                          <span className="text-sm">{host.name}</span>
+                        </div>
+                        <span className="text-xs text-gray-600">{host.managementIp}</span>
+                      </div>
+                    ) : null;
+                  })}
+                </div>
+              </div>
+
+              <div className="bg-blue-50 p-3 rounded">
+                <p className="text-sm text-blue-800">
+                  <strong>Mesh Network:</strong> All hosts are connected in a full mesh topology using VXLAN tunnels, 
+                  providing Layer 2 connectivity across the entire network.
+                </p>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
