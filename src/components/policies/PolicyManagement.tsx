@@ -92,7 +92,7 @@ export const PolicyManagement = () => {
   const togglePolicyStatus = (policyId: string) => {
     const updatedPolicies = policies.map(policy => {
       if (policy.id === policyId) {
-        const newStatus = policy.status === 'active' ? 'inactive' : 'active';
+        const newStatus: 'active' | 'inactive' = policy.status === 'active' ? 'inactive' : 'active';
         
         // Add event
         const events = JSON.parse(localStorage.getItem('dvsc_events') || '[]');
