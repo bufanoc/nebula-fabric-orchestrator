@@ -36,10 +36,10 @@ export const TopologyView = () => {
                   <Badge className="bg-green-100 text-green-800">XenServer-01</Badge>
                   <div className="space-y-1">
                     <div className="w-8 h-8 bg-purple-100 rounded flex items-center justify-center">
-                      <Network className="h-4 w-4 text-purple-600" />
+                      <Wifi className="h-4 w-4 text-purple-600" />
                     </div>
                     <div className="w-8 h-8 bg-purple-100 rounded flex items-center justify-center">
-                      <Network className="h-4 w-4 text-purple-600" />
+                      <Wifi className="h-4 w-4 text-purple-600" />
                     </div>
                   </div>
                 </div>
@@ -66,10 +66,10 @@ export const TopologyView = () => {
                   <Badge className="bg-green-100 text-green-800">XenServer-02</Badge>
                   <div className="space-y-1">
                     <div className="w-8 h-8 bg-purple-100 rounded flex items-center justify-center">
-                      <Network className="h-4 w-4 text-purple-600" />
+                      <Wifi className="h-4 w-4 text-purple-600" />
                     </div>
                     <div className="w-8 h-8 bg-purple-100 rounded flex items-center justify-center">
-                      <Network className="h-4 w-4 text-purple-600" />
+                      <Wifi className="h-4 w-4 text-purple-600" />
                     </div>
                   </div>
                 </div>
