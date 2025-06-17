@@ -1,10 +1,59 @@
 
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { GitBranch, Server, Wifi, Cable } from "lucide-react";
 
 export const TopologyView = () => {
+  const [switches, setSwitches] = useState<any[]>([]);
+  const [connectionStatus, setConnectionStatus] = useState<any[]>([]);
+
+  useEffect(() => {
+    // Load switches and generate topology data
+    const storedSwitches = JSON.parse(localStorage.getItem('dvsc_switches') || '[]');
+    setSwitches(storedSwitches);
+
+    // Generate connection status based on switches
+    const connections = [
+      { name: "Controller ↔ XenServer-01", status: "Connected" },
+      { name: "Controller ↔ XenServer-02", status: "Connected" },
+      { name: "Controller ↔ XenServer-03", status: storedSwitches.length > 3 ? "Warning" : "Connected" },
+    ];
+    setConnectionStatus(connections);
+  }, []);
+
+  const exportTopology = () => {
+    const topologyData = {
+      switches,
+      connectionStatus,
+      exportedAt: new Date().toISOString(),
+      hypervisors: ["XenServer-01", "XenServer-02", "XenServer-03"]
+    };
+    
+    const blob = new Blob([JSON.stringify(topologyData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `topology-${new Date().toISOString().split('T')[0]}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const refreshView = () => {
+    const storedSwitches = JSON.parse(localStorage.getItem('dvsc_switches') || '[]');
+    setSwitches(storedSwitches);
+    
+    // Add refresh event
+    const events = JSON.parse(localStorage.getItem('dvsc_events') || '[]');
+    events.unshift({
+      type: 'info',
+      message: 'Network topology view refreshed',
+      time: new Date().toLocaleString()
+    });
+    localStorage.setItem('dvsc_events', JSON.stringify(events.slice(0, 10)));
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -13,8 +62,8 @@ export const TopologyView = () => {
           <p className="text-gray-600 mt-1">Visualize your distributed virtual network infrastructure</p>
         </div>
         <div className="flex space-x-2">
-          <Button variant="outline">Export Topology</Button>
-          <Button className="bg-blue-600 hover:bg-blue-700">Refresh View</Button>
+          <Button variant="outline" onClick={exportTopology}>Export Topology</Button>
+          <Button className="bg-blue-600 hover:bg-blue-700" onClick={refreshView}>Refresh View</Button>
         </div>
       </div>
 
@@ -42,6 +91,9 @@ export const TopologyView = () => {
                       <Wifi className="h-4 w-4 text-purple-600" />
                     </div>
                   </div>
+                  <p className="text-xs text-gray-500">
+                    {switches.filter(s => s.hypervisor === 'XenServer-01').length} switches
+                  </p>
                 </div>
 
                 <div className="flex flex-col items-center justify-center">
@@ -53,6 +105,9 @@ export const TopologyView = () => {
                     <Wifi className="h-8 w-8 text-green-600" />
                   </div>
                   <Badge className="bg-blue-100 text-blue-800">DVSC Controller</Badge>
+                  <p className="text-xs text-gray-500">
+                    Managing {switches.length} switches
+                  </p>
                 </div>
 
                 <div className="flex flex-col items-center justify-center">
@@ -72,12 +127,21 @@ export const TopologyView = () => {
                       <Wifi className="h-4 w-4 text-purple-600" />
                     </div>
                   </div>
+                  <p className="text-xs text-gray-500">
+                    {switches.filter(s => s.hypervisor === 'XenServer-02').length} switches
+                  </p>
                 </div>
               </div>
               
-              <p className="text-gray-500 text-sm mt-8">
-                Interactive topology visualization will be enhanced with canvas-based diagrams
-              </p>
+              {switches.length === 0 ? (
+                <p className="text-gray-500 text-sm mt-8">
+                  No virtual switches configured. Create switches to see topology.
+                </p>
+              ) : (
+                <p className="text-gray-500 text-sm mt-8">
+                  Interactive topology showing {switches.length} virtual switches
+                </p>
+              )}
             </div>
           </div>
         </CardContent>
@@ -90,18 +154,18 @@ export const TopologyView = () => {
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-sm">Controller ↔ XenServer-01</span>
-                <Badge className="bg-green-100 text-green-800">Connected</Badge>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm">Controller ↔ XenServer-02</span>
-                <Badge className="bg-green-100 text-green-800">Connected</Badge>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm">Controller ↔ XenServer-03</span>
-                <Badge className="bg-yellow-100 text-yellow-800">Warning</Badge>
-              </div>
+              {connectionStatus.map((connection, index) => (
+                <div key={index} className="flex items-center justify-between">
+                  <span className="text-sm">{connection.name}</span>
+                  <Badge className={
+                    connection.status === 'Connected' ? 'bg-green-100 text-green-800' :
+                    connection.status === 'Warning' ? 'bg-yellow-100 text-yellow-800' :
+                    'bg-red-100 text-red-800'
+                  }>
+                    {connection.status}
+                  </Badge>
+                </div>
+              ))}
             </div>
           </CardContent>
         </Card>
@@ -114,15 +178,15 @@ export const TopologyView = () => {
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <span className="text-sm">North-South</span>
-                <span className="text-sm font-medium">2.4 Gbps</span>
+                <span className="text-sm font-medium">{(switches.length * 0.4).toFixed(1)} Gbps</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-sm">East-West</span>
-                <span className="text-sm font-medium">1.8 Gbps</span>
+                <span className="text-sm font-medium">{(switches.length * 0.3).toFixed(1)} Gbps</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-sm">Inter-Tenant</span>
-                <span className="text-sm font-medium">0.6 Gbps</span>
+                <span className="text-sm font-medium">{(switches.length * 0.1).toFixed(1)} Gbps</span>
               </div>
             </div>
           </CardContent>
@@ -136,15 +200,17 @@ export const TopologyView = () => {
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <span className="text-sm">Overall Health</span>
-                <Badge className="bg-green-100 text-green-800">Healthy</Badge>
+                <Badge className={switches.length > 5 ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800'}>
+                  {switches.length > 5 ? 'Warning' : 'Healthy'}
+                </Badge>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-sm">Packet Loss</span>
-                <span className="text-sm font-medium">0.01%</span>
+                <span className="text-sm font-medium">{switches.length > 3 ? '0.02%' : '0.01%'}</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-sm">Avg Latency</span>
-                <span className="text-sm font-medium">2.3ms</span>
+                <span className="text-sm font-medium">{(2 + switches.length * 0.1).toFixed(1)}ms</span>
               </div>
             </div>
           </CardContent>
