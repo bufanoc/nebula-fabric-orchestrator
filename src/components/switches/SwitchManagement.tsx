@@ -49,13 +49,9 @@ export const SwitchManagement = () => {
 
       <Tabs defaultValue="hosts" className="space-y-6">
         <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="hosts">XenServer Hosts</TabsTrigger>
-          <TabsTrigger value="networks" disabled={connectedHosts.length < 2}>
-            Virtual Networks ({networks.length})
-          </TabsTrigger>
-          <TabsTrigger value="vms" disabled={connectedHosts.length === 0}>
-            Virtual Machines
-          </TabsTrigger>
+          <TabsTrigger value="hosts">XenServer Hosts ({hosts.length})</TabsTrigger>
+          <TabsTrigger value="networks">Virtual Networks ({networks.length})</TabsTrigger>
+          <TabsTrigger value="vms">Virtual Machines</TabsTrigger>
         </TabsList>
 
         <TabsContent value="hosts">
