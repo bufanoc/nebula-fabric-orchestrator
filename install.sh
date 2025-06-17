@@ -97,6 +97,15 @@ sudo -u $SERVICE_USER bash -c "cd $APP_DIR && npm install"
 log "Building the application..."
 sudo -u $SERVICE_USER bash -c "cd $APP_DIR && npm run build"
 
+# Verify build was successful
+if [[ ! -d "$APP_DIR/dist" ]]; then
+    error "Build failed - dist directory not created"
+fi
+
+if [[ ! -f "$APP_DIR/dist/index.html" ]]; then
+    error "Build failed - index.html not found in dist directory"
+fi
+
 # Configure Nginx
 log "Configuring Nginx..."
 sudo tee /etc/nginx/sites-available/$NGINX_SITE > /dev/null <<EOF
@@ -155,11 +164,11 @@ log "Running installation tests..."
 
 # Test 1: Check if build directory exists and has files
 if [[ ! -d "$APP_DIR/dist" ]]; then
-    error "Build directory not found"
+    error "Build directory not found at $APP_DIR/dist"
 fi
 
 if [[ ! -f "$APP_DIR/dist/index.html" ]]; then
-    error "index.html not found in build directory"
+    error "index.html not found in build directory at $APP_DIR/dist"
 fi
 
 log "✓ Build files exist"
