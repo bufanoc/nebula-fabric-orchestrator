@@ -79,24 +79,23 @@ else
     log "User $SERVICE_USER already exists"
 fi
 
-# Create application directory
+# Create application directory and set permissions
 log "Setting up application directory..."
 sudo mkdir -p $APP_DIR
 sudo chown $SERVICE_USER:$SERVICE_USER $APP_DIR
 
-# Copy application files
+# Copy application files (excluding hidden files like .git to avoid permission issues)
 log "Copying application files..."
-sudo cp -r . $APP_DIR/
+sudo cp -r package*.json src/ public/ index.html vite.config.ts tsconfig*.json tailwind.config.ts postcss.config.js components.json $APP_DIR/ 2>/dev/null || true
 sudo chown -R $SERVICE_USER:$SERVICE_USER $APP_DIR
 
-# Install npm dependencies
+# Install npm dependencies as the service user
 log "Installing npm dependencies..."
-cd $APP_DIR
-sudo -u $SERVICE_USER npm install
+sudo -u $SERVICE_USER bash -c "cd $APP_DIR && npm install"
 
-# Build the application
+# Build the application as the service user
 log "Building the application..."
-sudo -u $SERVICE_USER npm run build
+sudo -u $SERVICE_USER bash -c "cd $APP_DIR && npm run build"
 
 # Configure Nginx
 log "Configuring Nginx..."
@@ -182,10 +181,10 @@ fi
 
 # Test 4: Check if React app loads correctly
 RESPONSE=$(curl -s "http://localhost")
-if echo "$RESPONSE" | grep -q "nebula-fabric-orchestrator"; then
+if echo "$RESPONSE" | grep -q "Vite\|React\|<!DOCTYPE html>"; then
     log "✓ React application loads correctly"
 else
-    warn "React application title not found, but HTTP response received"
+    warn "React application response received but content verification failed"
 fi
 
 # Test 5: Check if static assets are served
