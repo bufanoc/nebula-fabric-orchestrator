@@ -41,9 +41,13 @@ export const PolicyManagement = () => {
   ];
 
   useEffect(() => {
-    // Load policies from localStorage
+    // Load policies from localStorage with proper type casting
     const storedPolicies = JSON.parse(localStorage.getItem('dvsc_policies') || '[]');
-    setPolicies(storedPolicies);
+    const typedPolicies: Policy[] = storedPolicies.map((policy: any) => ({
+      ...policy,
+      status: (policy.status === 'active' || policy.status === 'inactive') ? policy.status : 'active'
+    }));
+    setPolicies(typedPolicies);
 
     // Load tenants for dropdown
     const storedTenants = JSON.parse(localStorage.getItem('dvsc_tenants') || '[]');
